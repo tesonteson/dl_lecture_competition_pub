@@ -7,6 +7,7 @@ from train import train, VQA_criterion
 import os
 import datetime
 from tqdm import tqdm
+import numpy as np
 import torch
 import torch.nn as nn
 import torchvision
@@ -18,6 +19,7 @@ def main():
     set_seed(42)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    # 画像データの前処理
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.RandomHorizontalFlip(),
