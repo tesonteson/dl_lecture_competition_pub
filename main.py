@@ -4,6 +4,9 @@ from src.datasets import collate_fn, collate_fn_test, VQADataset
 from src.models.base import VQAModel
 from train import train, VQA_criterion
 
+import os
+import datetime
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torchvision
@@ -81,10 +84,12 @@ def main():
         pred = pred.argmax(1).cpu().item()
         submission.append(pred)
 
+    output_date = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
     submission = [train_dataset.idx2answer[id] for id in submission]
     submission = np.array(submission)
-    torch.save(model.state_dict(), ".src/models/model.pth")
-    np.save("./data/submission.npy", submission)
+    torch.save(model.state_dict(), f".src/models/model_{output_date}.pth")
+    np.save(f"./data/submission_{output_date}.npy", submission)
 
 
 
