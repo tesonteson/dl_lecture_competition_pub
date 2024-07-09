@@ -90,7 +90,7 @@ def main():
 
     submission = [train_dataset.idx2answer[id] for id in submission]
     submission = np.array(submission)
-    torch.save(model.state_dict(), f".src/models/model_{output_date}.pth")
+    torch.save(model.state_dict(), f"./src/models/model_{output_date}.pth")
     np.save(f"./data/submission_{output_date}.npy", submission)
 
 
