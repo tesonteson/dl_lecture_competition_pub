@@ -2,7 +2,7 @@ venv
 __pycache__
 .DS_store
 
-data/*.npy
+data/
 
 src/models/*.pth
 src/__pycache__
