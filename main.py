@@ -61,7 +61,7 @@ def main():
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
     torch.backends.cudnn.benchmark = True
 
-    num_epoch = 1
+    num_epoch = 10
     for epoch in tqdm(range(num_epoch)):
         train_loss, train_acc, train_simple_acc, train_time = train(model,
                                                                     train_loader,
