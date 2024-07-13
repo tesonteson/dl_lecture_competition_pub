@@ -106,7 +106,7 @@ def ResNet50():
 
 
 class VQAModel(nn.Module):
-    def __init__(self, vocab_size: int, n_answer: int):
+    def __init__(self, n_answer: int):
         super().__init__()
         self.resnet = ResNet50()
         self.text_encoder = AutoModel.from_pretrained('bert-base-uncased')

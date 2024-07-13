@@ -28,16 +28,14 @@ def collate_fn_test(batch):
 
 
 class VQADataset(torch.utils.data.Dataset):
-    def __init__(self, df_path, answer_label_path, image_dir, transform=None, tokenizer_path='bert-base-uncased', create_corpus=True):
+    def __init__(self, df_path, answer, answer_label_path, image_dir, transform=None, tokenizer_path='bert-base-uncased', create_corpus=True):
         self.transform = transform
         self.image_dir = image_dir
         self.df = pandas.read_json(df_path)
-        self.df_answer_label = pandas.read_csv(answer_label_path)
         self.answer = answer
+        self.df_answer_label = pandas.read_csv(answer_label_path)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
-        self.question2idx = {}
-        self.idx2question = {}
         self.answer2idx = {}
         self.idx2answer = {}
 
@@ -46,14 +44,6 @@ class VQADataset(torch.utils.data.Dataset):
             self.create_corpus()
 
     def create_corpus(self):
-        for question in self.df["question"]:
-            question = process_text(question)
-            words = question.split(" ")
-            for word in words:
-                if word not in self.question2idx:
-                    self.question2idx[word] = len(self.question2idx)
-        self.idx2question = {v: k for k, v in self.question2idx.items()}
-
         for answers in self.df["answers"]:
             for answer in answers:
                 word = answer["answer"]
@@ -70,9 +60,7 @@ class VQADataset(torch.utils.data.Dataset):
         self.idx2answer = {v: k for k, v in self.answer2idx.items()}
 
     def update_dict(self, dataset):
-        self.question2idx = dataset.question2idx
         self.answer2idx = dataset.answer2idx
-        self.idx2question = dataset.idx2question
         self.idx2answer = dataset.idx2answer
 
     def __getitem__(self, idx):

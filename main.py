@@ -29,12 +29,15 @@ def main():
 
     #データセットの作成
     train_dataset = VQADataset(df_path="./data/train.json",
+                               answer=True,
                                answer_label_path="./data/class_mapping.csv",
                                image_dir="./data/train",
                                transform=transform,
                                tokenizer_path='bert-base-uncased',
                                create_corpus=True)
     test_dataset = VQADataset(df_path="./data/valid.json",
+                              answer=False,
+                              answer_label_path="./data/class_mapping.csv",
                               image_dir="./data/valid",
                               transform=transform,
                               tokenizer_path='bert-base-uncased',
@@ -56,9 +59,7 @@ def main():
                                               collate_fn=collate_fn_test)
 
     #モデルの作成
-    model = VQAModel(vocab_size=len(train_dataset.question2idx)+1,
-                     n_answer=len(train_dataset.answer2idx)
-                     ).to(device)
+    model = VQAModel(n_answer=len(train_dataset.answer2idx)).to(device)
 
     #損失関数＆オプティマイザ＆スケジューラの作成
     criterion = nn.CrossEntropyLoss()
@@ -66,7 +67,7 @@ def main():
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
     #モデルの学習と検証
-    num_epoch = 10
+    num_epoch = 20
     for epoch in tqdm(range(num_epoch)):
         train_loss, train_acc, train_simple_acc, train_time = train(model,
                                                                     train_loader,
