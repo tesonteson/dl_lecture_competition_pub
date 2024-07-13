@@ -1,8 +1,7 @@
 from src.utils import set_seed
-from src.preprocs import process_text
 from src.datasets import collate_fn, collate_fn_test, VQADataset
 from src.models.base import VQAModel
-from train import train, VQA_criterion
+from train import train
 
 import os
 import datetime
@@ -28,17 +27,21 @@ def main():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
+    #データセットの作成
     train_dataset = VQADataset(df_path="./data/train.json",
+                               answer_label_path="./data/class_mapping.csv",
                                image_dir="./data/train",
                                transform=transform,
-                               tokenizer_path='bert-base-uncased')
+                               tokenizer_path='bert-base-uncased',
+                               create_corpus=True)
     test_dataset = VQADataset(df_path="./data/valid.json",
                               image_dir="./data/valid",
                               transform=transform,
-                              answer=False,
-                              tokenizer_path='bert-base-uncased')
+                              tokenizer_path='bert-base-uncased',
+                              create_corpus=False)
     test_dataset.update_dict(train_dataset)
 
+    #データローダーの作成
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                batch_size=64,
                                                shuffle=True,
@@ -52,15 +55,17 @@ def main():
                                               pin_memory=True,
                                               collate_fn=collate_fn_test)
 
+    #モデルの作成
     model = VQAModel(vocab_size=len(train_dataset.question2idx)+1,
                      n_answer=len(train_dataset.answer2idx)
                      ).to(device)
 
+    #損失関数＆オプティマイザ＆スケジューラの作成
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=1e-5)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
-    torch.backends.cudnn.benchmark = True
 
+    #モデルの学習と検証
     num_epoch = 10
     for epoch in tqdm(range(num_epoch)):
         train_loss, train_acc, train_simple_acc, train_time = train(model,
@@ -75,19 +80,18 @@ def main():
             f"train simple acc: {train_simple_acc:.4f}")
         scheduler.step()
 
-
+    #テストデータ予測
     model.eval()
     submission = []
     for image, question_input_ids, question_attention_mask in tqdm(test_loader):
-        image = image.to(device)
-        question_input_ids = question_input_ids.to(device)
-        question_attention_mask = question_attention_mask.to(device)
+        image, question_input_ids, question_attention_mask = \
+            image.to(device), question_input_ids.to(device), question_attention_mask.to(device)
         pred = model(image, question_input_ids, question_attention_mask)
         pred = pred.argmax(1).cpu().item()
         submission.append(pred)
 
+    #提出ファイル出力
     output_date = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-
     submission = [train_dataset.idx2answer[id] for id in submission]
     submission = np.array(submission)
     torch.save(model.state_dict(), f"./src/models/model_{output_date}.pth")

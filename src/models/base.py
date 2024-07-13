@@ -124,7 +124,7 @@ class VQAModel(nn.Module):
     def forward(self, image, question_input_ids, question_attention_mask):
         image_feature = self.resnet(image)
         question_output = self.text_encoder(input_ids=question_input_ids, attention_mask=question_attention_mask)
-        question_feature = question_output.last_hidden_state[:, 0, :]  # [CLS]トークンの出力を使用
+        question_feature = question_output.last_hidden_state[:, 0, :]
 
         # 画像特徴量と質問特徴量を連結
         x = torch.cat([image_feature, question_feature], dim=1)

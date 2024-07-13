@@ -28,18 +28,24 @@ def collate_fn_test(batch):
 
 
 class VQADataset(torch.utils.data.Dataset):
-    def __init__(self, df_path, image_dir, transform=None, answer=True, tokenizer_path='bert-base-uncased'):
+    def __init__(self, df_path, answer_label_path, image_dir, transform=None, tokenizer_path='bert-base-uncased', create_corpus=True):
         self.transform = transform
         self.image_dir = image_dir
         self.df = pandas.read_json(df_path)
+        self.df_answer_label = pandas.read_csv(answer_label_path)
         self.answer = answer
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
         self.question2idx = {}
-        self.answer2idx = {}
         self.idx2question = {}
+        self.answer2idx = {}
         self.idx2answer = {}
 
+        #コーパスの作成＆正解ラベル辞書の作成
+        if create_corpus:
+            self.create_corpus()
+
+    def create_corpus(self):
         for question in self.df["question"]:
             question = process_text(question)
             words = question.split(" ")
@@ -48,14 +54,20 @@ class VQADataset(torch.utils.data.Dataset):
                     self.question2idx[word] = len(self.question2idx)
         self.idx2question = {v: k for k, v in self.question2idx.items()}
 
-        if self.answer:
-            for answers in self.df["answers"]:
-                for answer in answers:
-                    word = answer["answer"]
-                    word = process_text(word)
-                    if word not in self.answer2idx:
-                        self.answer2idx[word] = len(self.answer2idx)
-            self.idx2answer = {v: k for k, v in self.answer2idx.items()}
+        for answers in self.df["answers"]:
+            for answer in answers:
+                word = answer["answer"]
+                word = process_text(word)
+                if word not in self.answer2idx:
+                    self.answer2idx[word] = len(self.answer2idx)
+
+        #class_mapping.csvを元に訓練データ以外の正解ラベルの追加
+        for answer in self.df_answer_label["answer"].unique():
+            if word not in self.answer2idx:
+                word = process_text(word)
+                self.answer2idx[word] = len(self.answer2idx)
+
+        self.idx2answer = {v: k for k, v in self.answer2idx.items()}
 
     def update_dict(self, dataset):
         self.question2idx = dataset.question2idx
